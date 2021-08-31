@@ -2,14 +2,13 @@ package endpoints
 
 import cats.effect.{ContextShift, IO}
 import com.codahale.metrics.MetricRegistry
-import com.twitter.finagle.Service
-import com.twitter.finagle.http._
-import io.catbird.util.effect.futureToAsync
 import io.circe.{Decoder, jawn}
 import io.circe.generic.semiauto.deriveDecoder
 import org.example.com.ItemRepository
-import org.example.com.endpoints.ApiEndpoint
 import org.example.com.repositories.RepositoryItem
+import org.example.com.services.ApiService
+import org.http4s._
+import org.http4s.implicits._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -33,8 +32,8 @@ class ApiEndpointSpec extends AnyWordSpec with Matchers with ScalaFutures {
     }
 
     "returns a failure with invalid input" in {
-      withService(){service =>
-        val request = buildFailureRequest()
+      withService() { service =>
+        val request  = buildFailureRequest()
         val response = futureToAsync[IO, Response](service(request)).unsafeRunSync()
 
         response.status mustBe Status.BadRequest
@@ -61,12 +60,12 @@ object ApiEndpointSpec {
 
   implicit val repositoryItemDecoder: Decoder[RepositoryItem] = deriveDecoder[RepositoryItem]
 
-  def withService[T](metricRegistry: MetricRegistry = new MetricRegistry())(f: Service[Request, Response] => T)(
+  def withService(metricRegistry: MetricRegistry = new MetricRegistry())(f: => Request[IO])(
       implicit cs: ContextShift[IO]
-  ): T = {
+  ): = {
     val repository = new ItemRepository(metricRegistry)
-    val service    = new ApiEndpoint(repository, metricRegistry).endpoint.toService
-    f(service)
+    val service    = new ApiService(repository)(metricRegistry).helloWorldService.orNotFound.run
+    service(f)
   }
 
   def buildSuccessRequest(): Request = {
@@ -76,7 +75,7 @@ object ApiEndpointSpec {
       .buildGet()
   }
 
-  def buildFailureRequest(): Request =  {
+  def buildFailureRequest(): Request = {
     RequestBuilder
       .create()
       .url("http://localhost:8080/get/failure")

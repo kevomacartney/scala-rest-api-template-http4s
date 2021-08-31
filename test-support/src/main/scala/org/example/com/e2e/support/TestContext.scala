@@ -1,35 +1,27 @@
 package org.example.com.e2e.support
-
+import org.http4s.client.dsl.io._
+import org.http4s.headers._
+import org.http4s.{MediaType, Request, Response}
+import org.http4s.Method._
 import cats.effect.{IO, Resource}
-import com.twitter.finagle.http.{Method, Request, Response}
-import com.twitter.finagle.{Http, Service}
-import io.catbird.util.effect.futureToAsync
 import org.example.com.e2e.support.TestContext._
+import org.http4s.blaze.client.BlazeClientBuilder
+import cats.effect._
+import org.http4s._
+import org.http4s.dsl.io._
+import org.http4s.implicits._
+
+import scala.concurrent.ExecutionContext.global
 
 final case class TestContext(serverPort: Int) {
   val serverUrl = s"127.0.0.1:$serverPort"
 
-  def executeRequest(path: String, method: Method = Method.Get): Response = {
-    val request = Request(method, path)
-    request.host = serverUrl
-
-    executeRequest(request)
-  }
-
-  def executeRequest(request: Request): Response = {
-    createClient(request.host.get)
-      .use { service =>
-        futureToAsync[IO, Response](service(request))
-      }
-      .unsafeRunSync()
-  }
+  def executeRequest(request: Request[IO]): Response[IO] =  ???
 }
 
 object TestContext {
-  private def createClient(serverUrl: String): Resource[IO, Service[Request, Response]] = {
-    val acquire = IO(Http.newService(serverUrl))
-    val release = (svc: Service[Request, Response]) => futureToAsync[IO, Unit](svc.close())
+  import org.http4s.blaze.client._
+  import org.http4s.client._
 
-    Resource.make(acquire)(release)
-  }
+  protected def withClient[T](f: Client[IO] => T) = ???
 }
