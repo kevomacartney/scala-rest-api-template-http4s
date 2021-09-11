@@ -8,6 +8,7 @@ import org.example.com.ItemRepository
 import org.example.com.repositories.RepositoryItem
 import org.example.com.services.ApiService
 import org.http4s._
+import org.http4s.circe.jsonOf
 import org.http4s.implicits._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
@@ -18,16 +19,18 @@ import scala.concurrent.ExecutionContext
 class ApiEndpointSpec extends AnyWordSpec with Matchers with ScalaFutures {
   import ApiEndpointSpec._
 
-  implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit val cs: ContextShift[IO]        = IO.contextShift(ExecutionContext.global)
+  implicit val repositoryItemDecoder       = deriveDecoder[RepositoryItem]
+  implicit val repositoryItemEntityDecoder = jsonOf[IO, RepositoryItem]
 
   "GET/ get" should {
     "return a repository item" in {
       withService() { service =>
         val request  = buildSuccessRequest()
-        val response = futureToAsync[IO, Response](service(request)).unsafeRunSync()
+        val response = service(request)
 
         response.status mustBe Status.Ok
-        jawn.decode[RepositoryItem](response.contentString)
+        response.body.map
       }
     }
 
@@ -55,30 +58,18 @@ class ApiEndpointSpec extends AnyWordSpec with Matchers with ScalaFutures {
 
 object ApiEndpointSpec {
   import io.circe.generic.auto._
-  import io.finch.circe._
-  import org.example.com.endpoints.ApiEndpoint._
 
-  implicit val repositoryItemDecoder: Decoder[RepositoryItem] = deriveDecoder[RepositoryItem]
+  type Service = Request[IO] => Response[IO]
 
-  def withService(metricRegistry: MetricRegistry = new MetricRegistry())(f: => Request[IO])(
+  def withService[T](metricRegistry: MetricRegistry = new MetricRegistry())(f: Service => T)(
       implicit cs: ContextShift[IO]
-  ): = {
+  ): T = {
     val repository = new ItemRepository(metricRegistry)
-    val service    = new ApiService(repository)(metricRegistry).helloWorldService.orNotFound.run
-    service(f)
+    val service    = new ApiService(repository)(metricRegistry).helloWorldService.orNotFound.ru
+    f(service)
   }
 
-  def buildSuccessRequest(): Request = {
-    RequestBuilder
-      .create()
-      .url("http://localhost:8080/get/pass")
-      .buildGet()
-  }
+  def buildSuccessRequest(): Request[IO] = ???
 
-  def buildFailureRequest(): Request = {
-    RequestBuilder
-      .create()
-      .url("http://localhost:8080/get/failure")
-      .buildGet()
-  }
+  def buildFailureRequest(): Request[IO] = ???
 }
