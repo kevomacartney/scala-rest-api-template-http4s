@@ -1,35 +1,21 @@
 package org.example.com.e2e.support
 
-import cats.effect.{IO, Resource}
-import com.twitter.finagle.http.{Method, Request, Response}
-import com.twitter.finagle.{Http, Service}
-import io.catbird.util.effect.futureToAsync
-import org.example.com.e2e.support.TestContext._
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
+import org.http4s.client._
+import org.http4s._
 
 final case class TestContext(serverPort: Int) {
-  val serverUrl = s"127.0.0.1:$serverPort"
+  val serverUrl              = s"127.0.0.1:$serverPort"
+  val httpClient: Client[IO] = JavaNetClientBuilder[IO].create
 
-  def executeRequest(path: String, method: Method = Method.Get): Response = {
-    val request = Request(method, path)
-    request.host = serverUrl
-
+  def executeRequest(url: String, method: Method = Method.GET): Response[IO] = {
+    val fullUrl              = s"http://$serverUrl$url"
+    val request: Request[IO] = Request(method, uri = Uri.unsafeFromString(fullUrl))
     executeRequest(request)
   }
 
-  def executeRequest(request: Request): Response = {
-    createClient(request.host.get)
-      .use { service =>
-        futureToAsync[IO, Response](service(request))
-      }
-      .unsafeRunSync()
-  }
-}
-
-object TestContext {
-  private def createClient(serverUrl: String): Resource[IO, Service[Request, Response]] = {
-    val acquire = IO(Http.newService(serverUrl))
-    val release = (svc: Service[Request, Response]) => futureToAsync[IO, Unit](svc.close())
-
-    Resource.make(acquire)(release)
+  def executeRequest(request: Request[IO]): Response[IO] = {
+    httpClient.run(request).use(IO(_)).unsafeRunSync()
   }
 }

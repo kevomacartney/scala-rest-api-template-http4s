@@ -2,55 +2,61 @@ package org.example.com
 
 import cats.effect._
 import com.codahale.metrics.MetricRegistry
-import com.twitter.finagle.{Http, ListeningServer, Service}
-import com.twitter.finagle.http.{Request, Response}
-import io.catbird.util.effect.futureToAsync
+import cats.syntax.all._
+import com.codahale.metrics.jvm._
+import org.http4s.implicits._
+import org.http4s.server.{Router, Server}
 import org.example.com.config.ApplicationConfig
-import org.example.com.endpoints.{ApiEndpoint, Endpoints}
-import org.example.com.httpClient.MetricsStatsReceiver
 import org.example.com.ops.OpsServer
+import org.example.com.services.ApiService
+import org.http4s.blaze.server.BlazeServerBuilder
+import org.http4s.metrics.dropwizard.Dropwizard
+import org.http4s.server.middleware.Metrics
 import org.slf4j.LoggerFactory
 
+import java.lang.management.ManagementFactory.getPlatformMBeanServer
 import java.time.Clock
+import scala.concurrent.ExecutionContext.global
 
 object Wiring {
   def initialise(
       appConfig: ApplicationConfig
-  )(implicit cs: ContextShift[IO]): Resource[IO, (ListeningServer, ListeningServer)] = {
+  ): Resource[IO, (Server, Server)] = {
     val logger = LoggerFactory.getLogger("Example-Rest-API")
     logger.info("Starting app")
 
     implicit val metricsRegistry: MetricRegistry = new MetricRegistry
-    implicit val clock: Clock                    = Clock.systemUTC()
+    registerJvmMetrics(metricsRegistry)
 
     for {
-      repository <- ItemRepository()
-      opsServer  <- new OpsServer().create(appConfig.opsServerConfig)
-      service    <- createServer(repository, appConfig)
-    } yield (opsServer, service)
+      itemRepository <- ItemRepository()
+      ops            <- new OpsServer().create(appConfig.opsServerConfig)
+      api            <- createServer(itemRepository, appConfig)
+    } yield (api, ops)
+
   }
 
   private def createServer(repository: ItemRepository, appConfig: ApplicationConfig)(
-      implicit cs: ContextShift[IO],
-      metricRegistry: MetricRegistry
-  ): Resource[IO, ListeningServer] = {
-    val services = initialiseServices(repository, metricRegistry)
+      implicit metricRegistry: MetricRegistry
+  ): Resource[IO, Server] = {
+    val httpService = new ApiService(repository)
 
-    val acquire: IO[ListeningServer] = IO {
-      Http.server
-        .withLabel("example-api")
-        .withStatsReceiver(MetricsStatsReceiver(metricRegistry))
-        .serve(s":${appConfig.restConfig.port}", services)
-    }
-    val release: ListeningServer => IO[Unit] = (server: ListeningServer) => futureToAsync[IO, Unit](server.close())
+    val server        = Router("/" -> httpService.helloWorldService)
+    val meteredRoutes = Metrics[IO](Dropwizard(metricRegistry, "server"))(server)
 
-    Resource.make(acquire)(release)
+    BlazeServerBuilder[IO](global)
+      .bindHttp(appConfig.restConfig.port, "localhost")
+      .withHttpApp(meteredRoutes.orNotFound)
+      .resource
   }
 
-  private def initialiseServices(repository: ItemRepository, metricRegistry: MetricRegistry)(
-      implicit cs: ContextShift[IO]
-  ): Service[Request, Response] = {
-    val apiEndpoint = new ApiEndpoint(repository, metricRegistry)
-    Endpoints.createServices(apiEndpoint)
+  private def registerJvmMetrics(metricsRegistry: MetricRegistry): Unit = {
+    metricsRegistry.register("jvm.memory", new MemoryUsageGaugeSet)
+    metricsRegistry.register("jvm.threads", new ThreadStatesGaugeSet)
+    metricsRegistry.register("jvm.gc", new GarbageCollectorMetricSet)
+    metricsRegistry.register("jvm.bufferpools", new BufferPoolMetricSet(getPlatformMBeanServer))
+    metricsRegistry.register("jvm.classloading", new ClassLoadingGaugeSet)
+    metricsRegistry.register("jvm.filedescriptor", new FileDescriptorRatioGauge)
+
   }
 }

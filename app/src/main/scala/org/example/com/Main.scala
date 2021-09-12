@@ -8,7 +8,6 @@ import org.example.com.config.ApplicationConfig
 import pureconfig.ConfigSource
 
 import scala.io.{BufferedSource, Source}
-import scala.jdk.CollectionConverters.mapAsJavaMapConverter
 import scala.util.{Failure, Success, Try}
 
 object Main extends IOApp with LazyLogging {

@@ -1,41 +1,42 @@
 package endpoints
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.unsafe.IORuntime
+import cats.effect._
 import com.codahale.metrics.MetricRegistry
-import com.twitter.finagle.Service
-import com.twitter.finagle.http._
-import io.catbird.util.effect.futureToAsync
 import io.circe.{Decoder, jawn}
 import io.circe.generic.semiauto.deriveDecoder
 import org.example.com.ItemRepository
-import org.example.com.endpoints.ApiEndpoint
 import org.example.com.repositories.RepositoryItem
+import org.example.com.services.ApiService
+import org.http4s._
+import org.http4s.circe.jsonOf
+import org.http4s.implicits._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.concurrent.ExecutionContext
-
 class ApiEndpointSpec extends AnyWordSpec with Matchers with ScalaFutures {
   import ApiEndpointSpec._
 
-  implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
+  implicit val runtime: IORuntime                                             = cats.effect.unsafe.IORuntime.global
+  implicit val repositoryItemDecoder: Decoder[RepositoryItem]                 = deriveDecoder[RepositoryItem]
+  implicit val repositoryItemEntityDecoder: EntityDecoder[IO, RepositoryItem] = jsonOf[IO, RepositoryItem]
 
   "GET/ get" should {
-    "return a repository item" in {
+    "returns a repository item" in {
       withService() { service =>
         val request  = buildSuccessRequest()
-        val response = futureToAsync[IO, Response](service(request)).unsafeRunSync()
+        val response = service(request).unsafeRunSync()
 
         response.status mustBe Status.Ok
-        jawn.decode[RepositoryItem](response.contentString)
+        response.as[RepositoryItem].unsafeRunSync()
       }
     }
 
     "returns a failure with invalid input" in {
-      withService(){service =>
-        val request = buildFailureRequest()
-        val response = futureToAsync[IO, Response](service(request)).unsafeRunSync()
+      withService() { service =>
+        val request  = buildFailureRequest()
+        val response = service(request).unsafeRunSync()
 
         response.status mustBe Status.BadRequest
       }
@@ -46,7 +47,7 @@ class ApiEndpointSpec extends AnyWordSpec with Matchers with ScalaFutures {
 
       withService(metricRegistry) { service =>
         val request = buildSuccessRequest()
-        futureToAsync[IO, Response](service(request)).unsafeRunSync()
+        service(request).unsafeRunSync()
 
         metricRegistry.meter("retrievals").getCount mustBe 1
       }
@@ -56,30 +57,20 @@ class ApiEndpointSpec extends AnyWordSpec with Matchers with ScalaFutures {
 
 object ApiEndpointSpec {
   import io.circe.generic.auto._
-  import io.finch.circe._
-  import org.example.com.endpoints.ApiEndpoint._
 
-  implicit val repositoryItemDecoder: Decoder[RepositoryItem] = deriveDecoder[RepositoryItem]
+  type Service = Request[IO] => IO[Response[IO]]
 
-  def withService[T](metricRegistry: MetricRegistry = new MetricRegistry())(f: Service[Request, Response] => T)(
-      implicit cs: ContextShift[IO]
-  ): T = {
+  def withService[T](metricRegistry: MetricRegistry = new MetricRegistry())(f: Service => T): T = {
     val repository = new ItemRepository(metricRegistry)
-    val service    = new ApiEndpoint(repository, metricRegistry).endpoint.toService
+    val service    = new ApiService(repository)(metricRegistry).helloWorldService.orNotFound.run
     f(service)
   }
 
-  def buildSuccessRequest(): Request = {
-    RequestBuilder
-      .create()
-      .url("http://localhost:8080/get/pass")
-      .buildGet()
+  def buildSuccessRequest(): Request[IO] = {
+    Request(method = Method.GET, uri = Uri.unsafeFromString("/get/success"))
   }
 
-  def buildFailureRequest(): Request =  {
-    RequestBuilder
-      .create()
-      .url("http://localhost:8080/get/failure")
-      .buildGet()
+  def buildFailureRequest(): Request[IO] = {
+    Request(method = Method.GET, uri = Uri.unsafeFromString("/get/failure"))
   }
 }

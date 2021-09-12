@@ -2,7 +2,7 @@ import Dependencies._
 
 name := "rest-api"
 version := "0.1"
-scalaVersion := "2.13.0"
+scalaVersion := "2.13.6"
 idePackagePrefix := Some("org.example.com")
 
 lazy val commonSettings = Seq(
@@ -16,8 +16,6 @@ lazy val commonSettings = Seq(
     Circe.circeParse,
     Cats.cats,
     Cats.catsEffect,
-    Cats.catsBird,
-    Cats.catsBirdEffect,
     Logging.scalaLogging,
     Logging.logBack,
     Logging.jclOverSL4J,
@@ -35,8 +33,6 @@ lazy val `domain` = (project in file("./domain"))
   .settings(
     name := "domain",
     libraryDependencies ++= List(
-      Finagle.finagleCore,
-      Finch.finchCore,
       Metrics.metricsCore
     )
   )
@@ -58,6 +54,7 @@ lazy val `app` = (project in file("./app"))
 lazy val `end-to-end` = (project in file("./end-to-end"))
   .dependsOn(`test-support`, `domain`, `app`)
   .settings(commonSettings)
+  .settings(Http4s.http4sAll)
   .settings(
     name := "end-to-end",
     libraryDependencies ++= List(
@@ -73,10 +70,10 @@ lazy val `end-to-end` = (project in file("./end-to-end"))
 lazy val `test-support` = (project in file("./test-support"))
   .dependsOn(`domain`)
   .settings(commonSettings)
+  .settings(Http4s.http4sAll)
   .settings(
     name := "test-support",
     libraryDependencies ++= List(
-      Finch.finchCirce,
       Metrics.metricsCore,
       Metrics.metricsJson,
       Metrics.metricsJvm
@@ -86,11 +83,10 @@ lazy val `test-support` = (project in file("./test-support"))
 lazy val `web` = (project in file("./web"))
   .dependsOn(`domain`)
   .settings(commonSettings)
+  .settings(Http4s.http4sAll)
   .settings(
     name := "test-support",
     libraryDependencies ++= List(
-      Fs2.fs2Core,
-      Finch.finchCirce,
       Metrics.metricsCore,
       Metrics.metricsJson,
       Metrics.metricsJvm

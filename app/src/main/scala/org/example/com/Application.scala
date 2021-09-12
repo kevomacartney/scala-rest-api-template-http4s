@@ -1,19 +1,16 @@
 package org.example.com
 
 import cats.effect._
-import com.twitter.finagle.ListeningServer
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
-import org.example.com.Main.logger
 import org.example.com.config.ApplicationConfig
 import pureconfig.ConfigSource
-
+import collection.JavaConverters._
 import scala.io.{BufferedSource, Source}
-import scala.jdk.CollectionConverters.mapAsJavaMapConverter
 
 object Application extends LazyLogging {
 
-  def run(env: String)(implicit cs: ContextShift[IO]): IO[ExitCode] = {
+  def run(env: String): IO[ExitCode] = {
     val resultResource = for {
       secrets   <- loadSecrets
       appConfig <- loadConfig(secrets)
@@ -23,8 +20,8 @@ object Application extends LazyLogging {
     resultResource
       .use { tuple => // can't figure out how to open it up here
         val (service, opServer) = tuple
-        logger.info(s"Server started and listening on ${service.boundAddress}")
-        logger.info(s"Ops Server started and listening on ${opServer.boundAddress}")
+        logger.info(s"Server started and listening on ${service.address}")
+        logger.info(s"Ops Server started and listening on ${opServer.address}")
 
         IO.never
       }
