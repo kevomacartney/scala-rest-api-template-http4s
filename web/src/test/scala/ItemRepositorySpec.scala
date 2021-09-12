@@ -1,4 +1,5 @@
 import ItemRepositorySpec.withRepository
+import cats.effect.unsafe.IORuntime
 import com.codahale.metrics.MetricRegistry
 import org.example.com.ItemRepository
 import org.scalatest.concurrent.ScalaFutures
@@ -7,6 +8,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class ItemRepositorySpec extends AnyWordSpec with Matchers with ScalaFutures {
   import ItemRepositorySpec._
+  implicit val runtime: IORuntime = cats.effect.unsafe.IORuntime.global
 
   "ItemRepository" should {
     "return a repositoryItem for valid id" in {
@@ -30,8 +32,8 @@ class ItemRepositorySpec extends AnyWordSpec with Matchers with ScalaFutures {
         repository.get("failure").unsafeRunSync()
         repository.get("success").unsafeRunSync()
 
-       metricRegistry.meter("item-repository.failure").getCount mustBe 1
-       metricRegistry.meter("item-repository.success").getCount mustBe 1
+        metricRegistry.meter("item-repository.failure").getCount mustBe 1
+        metricRegistry.meter("item-repository.success").getCount mustBe 1
       }(metricRegistry)
     }
   }

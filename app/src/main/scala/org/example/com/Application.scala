@@ -10,7 +10,7 @@ import scala.io.{BufferedSource, Source}
 
 object Application extends LazyLogging {
 
-  def run(env: String)(implicit cs: ContextShift[IO]): IO[ExitCode] = {
+  def run(env: String): IO[ExitCode] = {
     val resultResource = for {
       secrets   <- loadSecrets
       appConfig <- loadConfig(secrets)

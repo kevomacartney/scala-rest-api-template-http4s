@@ -4,8 +4,7 @@ import sbt._
 object Dependencies {
 
   val overrides = List(
-    "org.typelevel" %% "cats-effect" % "2.5.0"
-  )
+    )
 
   object Circe {
     private val version = "0.14.1"
@@ -17,9 +16,9 @@ object Dependencies {
   }
 
   object Cats {
-    lazy val cats           = "org.typelevel"    %% "cats-core"       % "2.6.1"
-    lazy val catsEffect     = "org.typelevel"    %% "cats-effect"     % "3.2.2"
-    lazy val catsRetry      = "com.github.cb372" %% "cats-retry"      % "3.0.0"
+    lazy val cats       = "org.typelevel"    %% "cats-core"   % "2.6.1"
+    lazy val catsEffect = "org.typelevel"    %% "cats-effect" % "3.2.7"
+    lazy val catsRetry  = "com.github.cb372" %% "cats-retry"  % "3.1.0"
   }
 
   object Logging {
@@ -42,19 +41,21 @@ object Dependencies {
     lazy val http4sServer          = "org.http4s" %% "http4s-blaze-server" % http4sVersion
     lazy val http4sClient          = "org.http4s" %% "http4s-blaze-client" % http4sVersion
     lazy val http4sCirce           = "org.http4s" %% "http4s-circe" % http4sVersion
-    private lazy val http4sVersion = "0.23.1"
+    lazy val http4sDropwizard      = "org.http4s" %% "http4s-dropwizard-metrics" % http4sVersion
+    private lazy val http4sVersion = "0.23.3"
     val http4sAll = Seq(
       libraryDependencies ++= List(
         Http4s.http4sServer,
         Http4s.http4sClient,
         Http4s.http4sDsl,
-        Http4s.http4sCirce
+        Http4s.http4sCirce,
+        http4sDropwizard
       )
     )
   }
 
   object Fs2 {
-    private lazy val version = "3.1.0"
+    private lazy val version = "3.1.1"
     lazy val fs2Core         = "co.fs2" %% "fs2-core" % version
   }
 

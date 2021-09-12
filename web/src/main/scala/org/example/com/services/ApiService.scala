@@ -17,6 +17,7 @@ class ApiService(repository: ItemRepository)(implicit metricRegistry: MetricRegi
   def helloWorldService: HttpRoutes[IO] = HttpRoutes.of[IO] {
     case GET -> Root / "get" / passCriteria =>
       metricRegistry.meter("retrievals").mark()
+
       repository.get(passCriteria).flatMap {
         case None           => BadRequest()
         case Some(repoItem) => Ok(repoItem.asJson)
