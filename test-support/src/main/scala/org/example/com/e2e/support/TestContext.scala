@@ -9,13 +9,14 @@ final case class TestContext(serverPort: Int) {
   val serverUrl              = s"127.0.0.1:$serverPort"
   val httpClient: Client[IO] = JavaNetClientBuilder[IO].create
 
-  def executeRequest(url: String, method: Method = Method.GET): Response[IO] = {
+  def executeRequestWithResponse[T](url: String, method: Method = Method.GET)(handler: Response[IO] => T): T = {
     val fullUrl              = s"http://$serverUrl$url"
     val request: Request[IO] = Request(method, uri = Uri.unsafeFromString(fullUrl))
-    executeRequest(request)
+    executeRequestWithResponse(request)(handler)
   }
 
-  def executeRequest(request: Request[IO]): Response[IO] = {
-    httpClient.run(request).use(IO(_)).unsafeRunSync()
+  def executeRequestWithResponse[T](request: Request[IO])(handler: Response[IO] => T): T = {
+    httpClient.run(request).use(resp => IO(handler(resp))).unsafeRunSync()
   }
+
 }

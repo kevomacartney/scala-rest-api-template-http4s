@@ -29,6 +29,7 @@ class ItemRepository(metricRegistry: MetricRegistry) extends Repository[IO] {
 
 object ItemRepository {
   def apply()(implicit metricRegistry: MetricRegistry): Resource[IO, ItemRepository] = {
-    Resource.eval(IO(new ItemRepository(metricRegistry)))
+    val acquire = IO(new ItemRepository(metricRegistry))
+    Resource.eval(acquire)
   }
 }
