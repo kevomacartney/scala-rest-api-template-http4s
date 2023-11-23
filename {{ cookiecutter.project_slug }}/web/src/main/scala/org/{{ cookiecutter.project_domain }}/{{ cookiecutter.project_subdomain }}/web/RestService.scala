@@ -1,11 +1,20 @@
+<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/web/src/main/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/web/RestService.scala
 package org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.web
+========
+package org.{{ cookiecutter.project_subdomain }}.com.services
+>>>>>>>> main:{{ cookiecutter.project_slug }}/web/src/main/scala/org/{{ cookiecutter.project_subdomain }}/com/services/ApiService.scala
 
 import cats.effect._
 import com.codahale.metrics.MetricRegistry
 import io.circe._
 import io.circe.generic.semiauto._
 import io.circe.syntax._
+<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/web/src/main/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/web/RestService.scala
 import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.domain.repositories._
+========
+import org.{{ cookiecutter.project_subdomain }}.com.ItemRepository
+import org.{{ cookiecutter.project_subdomain }}.com.repositories.RepositoryItem
+>>>>>>>> main:{{ cookiecutter.project_slug }}/web/src/main/scala/org/{{ cookiecutter.project_subdomain }}/com/services/ApiService.scala
 import org.http4s._
 import org.http4s.circe.jsonEncoder
 import org.http4s.dsl.io._

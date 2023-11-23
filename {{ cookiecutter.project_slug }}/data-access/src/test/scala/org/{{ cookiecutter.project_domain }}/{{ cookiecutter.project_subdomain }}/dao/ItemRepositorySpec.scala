@@ -2,6 +2,10 @@ package org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain 
 
 import cats.effect.unsafe.IORuntime
 import com.codahale.metrics.MetricRegistry
+<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/data-access/src/test/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/dao/ItemRepositorySpec.scala
+========
+import org.{{ cookiecutter.project_subdomain }}.com.ItemRepository
+>>>>>>>> main:{{ cookiecutter.project_slug }}/web/src/test/scala/org/{{ cookiecutter.project_subdomain }}/com/ItemRepositorySpec.scala
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec

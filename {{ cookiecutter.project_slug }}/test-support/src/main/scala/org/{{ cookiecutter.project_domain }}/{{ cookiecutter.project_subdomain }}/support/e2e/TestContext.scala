@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/test-support/src/main/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/support/e2e/TestContext.scala
 package org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.support.e2e
+========
+package org.{{ cookiecutter.project_subdomain }}.com.e2e.support
+>>>>>>>> main:{{ cookiecutter.project_slug }}/test-support/src/main/scala/org/{{ cookiecutter.project_subdomain }}/com/e2e/support/TestContext.scala
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global

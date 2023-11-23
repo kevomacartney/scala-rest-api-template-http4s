@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/ops/OpsService.scala
 package org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.ops
+========
+package org.{{ cookiecutter.project_subdomain }}.com.ops
+>>>>>>>> main:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_subdomain }}/com/ops/OpsService.scala
 
 import cats.effect._
 import com.codahale.metrics.MetricRegistry

@@ -5,7 +5,13 @@ import cats.effect._
 import com.codahale.metrics.MetricRegistry
 import io.circe.{Decoder, jawn}
 import io.circe.generic.semiauto.deriveDecoder
+<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/web/src/test/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/web/endpoints/ApiEndpointSpec.scala
 import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.domain.repositories._
+========
+import org.{{ cookiecutter.project_subdomain }}.com.ItemRepository
+import org.{{ cookiecutter.project_subdomain }}.com.repositories.RepositoryItem
+import org.{{ cookiecutter.project_subdomain }}.com.services.ApiService
+>>>>>>>> main:{{ cookiecutter.project_slug }}/web/src/test/scala/org/{{ cookiecutter.project_subdomain }}/com/endpoints/ApiEndpointSpec.scala
 import org.http4s._
 import org.http4s.circe.jsonOf
 import org.http4s.implicits._

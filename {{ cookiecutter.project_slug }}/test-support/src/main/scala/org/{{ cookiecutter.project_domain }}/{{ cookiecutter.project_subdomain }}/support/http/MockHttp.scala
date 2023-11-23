@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/test-support/src/main/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/support/http/MockHttp.scala
 package org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.support.http
+========
+package org.{{ cookiecutter.project_subdomain }}.com.e2e.support.http
+>>>>>>>> main:{{ cookiecutter.project_slug }}/test-support/src/main/scala/org/{{ cookiecutter.project_subdomain }}/com/e2e/support/http/MockHttp.scala
 
 import java.net.ServerSocket
 

@@ -1,6 +1,12 @@
+<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/end-to-end/src/test/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/e2e/EndToEndSpec.scala
 package org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.e2e
 
 import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.e2e.support.TestApplication
+========
+package org.{{ cookiecutter.project_subdomain }}.com.e2e
+
+import org.{{ cookiecutter.project_subdomain }}.com.e2e.support.TestApplication
+>>>>>>>> main:{{ cookiecutter.project_slug }}/end-to-end/src/test/scala/org/{{ cookiecutter.project_subdomain }}/com/e2e/EndToEndSpec.scala
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.featurespec.AnyFeatureSpec
 import io.circe.optics.JsonPath.root

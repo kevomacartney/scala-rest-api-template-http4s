@@ -1,10 +1,18 @@
+<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/end-to-end/src/test/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/e2e/support/TestApplication.scala
 package org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.e2e.support
+========
+package org.{{ cookiecutter.project_subdomain }}.com.e2e.support
+>>>>>>>> main:{{ cookiecutter.project_slug }}/end-to-end/src/test/scala/org/{{ cookiecutter.project_subdomain }}/com/e2e/support/TestApplication.scala
 
 import cats.effect._
 import cats.effect.unsafe.implicits.global
 import io.circe._
+<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/end-to-end/src/test/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/e2e/support/TestApplication.scala
 import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.Application
 import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.support.e2e.TestContext
+========
+import org.{{ cookiecutter.project_subdomain }}.com.Application
+>>>>>>>> main:{{ cookiecutter.project_slug }}/end-to-end/src/test/scala/org/{{ cookiecutter.project_subdomain }}/com/e2e/support/TestApplication.scala
 import org.http4s._
 import org.http4s.circe._
 import org.scalatest.Assertion
