@@ -1,7 +1,8 @@
 {
   "project_name": "Scala rest api http4s",
   "project_slug": "scala-rest-api-http4s",
-  "project_subdomain": "foxi",
+  "project_domain": "foxi",
+  "project_subdomain" : "{{ cookiecutter.project_slug }}",
   "_copy_without_render": ["project/build.properties", "project/plugins.sbt"],
   "project_short_description": "Scala rest api written in http4s",
   "author": "Kevo Macartney"
