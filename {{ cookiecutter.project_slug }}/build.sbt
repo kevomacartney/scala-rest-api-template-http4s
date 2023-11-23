@@ -36,8 +36,18 @@ lazy val `domain` = (project in file("./domain"))
     )
   )
 
+lazy val `data-access` = (project in file("./data-access"))
+  .dependsOn(`domain`, `test-support`)
+  .settings(commonSettings)
+  .settings(
+    name := "data-access",
+    libraryDependencies ++= List(
+      Metrics.metricsCore
+    )
+  )
+
 lazy val `app` = (project in file("./app"))
-  .dependsOn(domain, `web`)
+  .dependsOn(domain, `web`, `data-access`)
   .settings(commonSettings)
   .settings(
     name := "app",
@@ -80,7 +90,7 @@ lazy val `test-support` = (project in file("./test-support"))
   )
 
 lazy val `web` = (project in file("./web"))
-  .dependsOn(`domain`)
+  .dependsOn(`domain`, `test-support`)
   .settings(commonSettings)
   .settings(Http4s.http4sAll)
   .settings(

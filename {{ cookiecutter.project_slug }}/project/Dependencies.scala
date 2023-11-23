@@ -43,7 +43,7 @@ object Dependencies {
     lazy val http4sCirce      = "org.http4s" %% "http4s-circe"              % http4sVersion
     lazy val http4sDropwizard = "org.http4s" %% "http4s-dropwizard-metrics" % http4sDropWizardVersion
 
-    private lazy val http4sVersion           = "0.23.18"
+    private lazy val http4sVersion           = "0.23.24"
     private lazy val http4sDropWizardVersion = "0.23.11"
 
     val http4sAll = Seq(
