@@ -37,4 +37,4 @@ jobs:
         cache: 'sbt'
         
     - name: Run tests
-      run: sbt test
+      run: ls; sbt test
