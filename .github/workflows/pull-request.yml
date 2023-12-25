@@ -26,9 +26,6 @@ jobs:
     - name: Create project from template
       run: cookiecutter . --no-input
 
-    - name: Open Scala Project
-      run: cd scala-rest-api-http4s
-
     - name: Set up JDK 17
       uses: actions/setup-java@v3
       with:
@@ -37,4 +34,5 @@ jobs:
         cache: 'sbt'
         
     - name: Run tests
-      run: ls; sbt test
+      working-directory: ./scala-rest-api-http4s
+      run: ls; sbt test;
