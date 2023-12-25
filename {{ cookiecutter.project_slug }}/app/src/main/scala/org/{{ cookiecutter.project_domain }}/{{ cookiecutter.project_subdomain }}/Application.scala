@@ -3,14 +3,16 @@ package org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain 
 import cats.effect._
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.LazyLogging
+import io.micrometer.prometheus.PrometheusMeterRegistry
 import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.config.ApplicationConfig
 import pureconfig.ConfigSource
 
 import scala.jdk.CollectionConverters._
 
 object Application extends LazyLogging {
-
-  def run(env: String, secrets: Map[String, String]): Resource[IO, Unit] = {
+  def run(env: String, secrets: Map[String, String])(
+      implicit meterRegistry: PrometheusMeterRegistry
+  ): Resource[IO, Unit] = {
     val resultResource = for {
       appConfig <- loadConfig(secrets)
       wiring    <- Wiring.initialise(appConfig)

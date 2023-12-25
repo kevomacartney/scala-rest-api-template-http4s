@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "ItemRequested",
+  "namespace": "org.{{ cookiecutter.project_domain }}.account",
+  "fields": [
+    {"name": "id", "type": "string"},
+    {"name": "name", "type": "string"},
+    {"name": "at", "type": "long"}
+  ]
+}

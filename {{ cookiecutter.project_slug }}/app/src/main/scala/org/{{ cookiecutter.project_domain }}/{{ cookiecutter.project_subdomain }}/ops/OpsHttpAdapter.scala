@@ -1,27 +1,20 @@
-<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/ops/OpsHttpAdapter.scala
 package org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.ops
-========
-package org.{{ cookiecutter.project_subdomain }}.com.ops
->>>>>>>> main:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_subdomain }}/com/ops/OpsHttpAdapter.scala
 
 import cats.data.Kleisli
 import cats.effect._
 import cats.syntax.all._
-import com.codahale.metrics.MetricRegistry
 import com.comcast.ip4s._
 import com.typesafe.scalalogging.LazyLogging
-<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/ops/OpsHttpAdapter.scala
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.prometheus.PrometheusMeterRegistry
 import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.config.OpsServerConfig
-========
-import org.foxi.com.config.OpsServerConfig
->>>>>>>> main:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_subdomain }}/com/ops/OpsHttpAdapter.scala
 import org.http4s.ember.server._
 import org.http4s.implicits._
 import org.http4s.server.{Router, Server}
 import org.http4s.{Request, Response}
 
 class OpsHttpAdapter extends LazyLogging {
-  def create(opsServerConfig: OpsServerConfig)(implicit metricRegistry: MetricRegistry): Resource[IO, Server] = {
+  def create(opsServerConfig: OpsServerConfig)(implicit meterRegistry: PrometheusMeterRegistry): Resource[IO, Server] = {
     val builtServices = buildServices
 
     EmberServerBuilder
@@ -32,9 +25,9 @@ class OpsHttpAdapter extends LazyLogging {
       .build
   }
 
-  private def buildServices(implicit metricRegistry: MetricRegistry): Kleisli[IO, Request[IO], Response[IO]] = {
+  private def buildServices(implicit meterRegistry: PrometheusMeterRegistry): Kleisli[IO, Request[IO], Response[IO]] = {
     val opsInstance = new OpsService()
-    val services    = opsInstance.plainTextServices <+> opsInstance.jsonServices
+    val services    = opsInstance.plainTextServices <+> opsInstance.metricsRoute
 
     Router("/private" -> services).orNotFound
   }

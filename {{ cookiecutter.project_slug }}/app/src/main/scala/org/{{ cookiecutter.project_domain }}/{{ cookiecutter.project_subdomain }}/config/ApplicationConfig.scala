@@ -1,10 +1,20 @@
-<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/config/ApplicationConfig.scala
 package org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.config
-========
-package org.{{ cookiecutter.project_subdomain }}.com.config
->>>>>>>> main:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_subdomain }}/com/config/ApplicationConfig.scala
 
-final case class ApplicationConfig(opsServerConfig: OpsServerConfig, restConfig: RestApiConfig)
+import scala.concurrent.duration.Duration
 
-final case class RestApiConfig(port: Int)
+final case class ApplicationConfig(
+    opsServerConfig: OpsServerConfig,
+    restConfig: RestApiConfig,
+    postgresqlConfig: PostgresqlConfig,
+    kafkaConfig: KafkaConfig
+)
+
+final case class RestApiConfig(port: Int, idleTimeout: Duration)
 final case class OpsServerConfig(port: Int)
+final case class PostgresqlConfig(url: String, user: String, password: String, database: String, queryTimeoutMs: Int)
+final case class KafkaConfig(
+    bootstrapServers: String,
+    schemaRegistryUrl: String,
+    domainItemEventsTopic: String,
+    producerName: String
+)
