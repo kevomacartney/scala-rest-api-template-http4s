@@ -1,81 +1,168 @@
-<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/Wiring.scala
 package org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}
-========
-package org.{{ cookiecutter.project_subdomain }}.com
->>>>>>>> main:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_subdomain }}/com/Wiring.scala
 
 import cats.effect._
-import com.codahale.metrics.MetricRegistry
-import com.codahale.metrics.jvm._
 import com.comcast.ip4s._
-import org.http4s.implicits._
-import org.http4s.server.{Router, Server}
-<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/Wiring.scala
+import com.typesafe.scalalogging.LazyLogging
+import com.zaxxer.hikari.HikariConfig
+import doobie.Transactor
+import doobie.hikari.HikariTransactor
+import fs2.kafka.producer.MkProducer
+import fs2.kafka.vulcan.{AvroSettings, SchemaRegistryClientSettings, avroSerializer}
+import fs2.kafka.{KafkaByteProducer, KafkaProducer, ProducerSettings}
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.binder.jvm._
+import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics
+import io.micrometer.prometheus.PrometheusMeterRegistry
+import org.apache.kafka.common.serialization.ByteArraySerializer
+import org.{{ cookiecutter.project_domain }}.account.ItemRequested
 import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.config.ApplicationConfig
-import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.dao.ItemRepository
+import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.dao.publisher.ItemEventPublisher
+import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.dao.{DefaultDomainItemDao, ItemRepository}
+import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.domain.metrics.MetricsService
 import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.ops.OpsHttpAdapter
-import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.web.RestService
-========
-import org.{{ cookiecutter.project_subdomain }}.com.config.ApplicationConfig
-import org.{{ cookiecutter.project_subdomain }}.com.ops.OpsHttpAdapter
-import org.{{ cookiecutter.project_subdomain }}.com.services.ApiService
->>>>>>>> main:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_subdomain }}/com/Wiring.scala
+import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.web.endpoints.RestService
 import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.metrics.dropwizard.Dropwizard
-import org.http4s.server.middleware.Metrics
-import org.slf4j.LoggerFactory
+import org.http4s.implicits._
+import org.http4s.metrics.prometheus.Prometheus
+import org.http4s.server.middleware.{Logger, Metrics}
+import org.http4s.server.{Router, Server}
+import vulcan.Codec
+import vulcan.generic.MagnoliaCodec
 
-import java.lang.management.ManagementFactory.getPlatformMBeanServer
-<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/Wiring.scala
-import scala.concurrent.duration.DurationInt
-========
->>>>>>>> main:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_subdomain }}/com/Wiring.scala
+import scala.jdk.CollectionConverters.MapHasAsJava
 
-object Wiring {
+object Wiring extends LazyLogging {
+
   def initialise(
-                  appConfig: ApplicationConfig
-                ): Resource[IO, (Server, Server)] = {
-    val logger = LoggerFactory.getLogger("Example-Rest-API")
+      appConfig: ApplicationConfig
+  )(implicit meterRegistry: PrometheusMeterRegistry): Resource[IO, (Server, Server)] = {
     logger.info("Starting app")
 
-    implicit val metricsRegistry: MetricRegistry = new MetricRegistry
-    registerJvmMetrics(metricsRegistry)
-
     for {
-      itemRepository <- ItemRepository()
-      ops            <- new OpsHttpAdapter().create(appConfig.opsServerConfig)
-      api            <- createServer(itemRepository, appConfig)
+      postgresqlUrl <- Resource.pure(s"${appConfig.postgresqlConfig.url}/${appConfig.postgresqlConfig.database}")
+      transactor <- createTransactor(
+                     jdbcUrl = postgresqlUrl,
+                     username = appConfig.postgresqlConfig.user,
+                     password = appConfig.postgresqlConfig.password,
+                     meterRegistry = meterRegistry
+                   )
+
+      metricsService = MetricsService[IO](meterRegistry)
+      _              = registerJvmMetrics(meterRegistry)
+
+      domainItemDao  <- DefaultDomainItemDao(transactor, appConfig.postgresqlConfig.queryTimeoutMs)
+      itemRepository <- ItemRepository(domainItemDao)(metricsService)
+
+      kafkaProducer <- createKafkaProducer(
+                        appConfig.kafkaConfig.bootstrapServers,
+                        appConfig.kafkaConfig.schemaRegistryUrl,
+                        appConfig.kafkaConfig.producerName
+                      )
+
+      itemEventPublisher = ItemEventPublisher(kafkaProducer, appConfig.kafkaConfig.domainItemEventsTopic)(
+        metricsService
+      )
+      api <- createRestService(itemRepository, itemEventPublisher, appConfig)(meterRegistry, metricsService)
+
+      ops <- new OpsHttpAdapter().create(appConfig.opsServerConfig)(meterRegistry)
     } yield (api, ops)
 
   }
 
-  private def createServer(repository: ItemRepository, appConfig: ApplicationConfig)(
-    implicit metricRegistry: MetricRegistry
+  private def createRestService(
+      repository: ItemRepository,
+      eventPublisher: ItemEventPublisher,
+      appConfig: ApplicationConfig
+  )(
+      implicit metricRegistry: PrometheusMeterRegistry,
+      metricsService: MetricsService[IO]
   ): Resource[IO, Server] = {
-    val httpService = new RestService(repository)
+    val httpService = new RestService(repository, eventPublisher)
 
-    val server        = Router("/" -> httpService.helloWorldService)
-    val meteredRoutes = Metrics[IO](Dropwizard(metricRegistry, "server"))(server)
+    val routes = Router("/" -> httpService.getDomainItemService)
 
-    EmberServerBuilder
-      .default[IO]
-      .withHost(ipv4"0.0.0.0")
-      .withPort(Port.fromInt(appConfig.restConfig.port).get)
-      .withHttpApp(meteredRoutes.orNotFound)
-<<<<<<<< HEAD:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_domain }}/{{ cookiecutter.project_subdomain }}/Wiring.scala
-      .withShutdownTimeout(0.seconds)
-========
->>>>>>>> main:{{ cookiecutter.project_slug }}/app/src/main/scala/org/{{ cookiecutter.project_subdomain }}/com/Wiring.scala
-      .build
+    val meteredStubRoutes = for {
+      metrics                <- Prometheus.metricsOps[IO](metricRegistry.getPrometheusRegistry, "http4s")
+      meteredRoutes          = Metrics[IO](metrics)(routes)
+      loggedAndMeteredRoutes = Logger.httpRoutes[IO](logHeaders = false, logBody = false)(meteredRoutes)
+    } yield loggedAndMeteredRoutes
+
+    meteredStubRoutes.flatMap { routes =>
+      EmberServerBuilder
+        .default[IO]
+        .withHost(ipv4"0.0.0.0")
+        .withPort(Port.fromInt(appConfig.restConfig.port).get)
+        .withIdleTimeout(appConfig.restConfig.idleTimeout)
+        .withHttpApp(routes.orNotFound)
+        .build
+    }
   }
 
-  private def registerJvmMetrics(metricsRegistry: MetricRegistry): Unit = {
-    metricsRegistry.register("jvm.memory", new MemoryUsageGaugeSet)
-    metricsRegistry.register("jvm.threads", new ThreadStatesGaugeSet)
-    metricsRegistry.register("jvm.gc", new GarbageCollectorMetricSet)
-    metricsRegistry.register("jvm.bufferpools", new BufferPoolMetricSet(getPlatformMBeanServer))
-    metricsRegistry.register("jvm.classloading", new ClassLoadingGaugeSet)
-    metricsRegistry.register("jvm.filedescriptor", new FileDescriptorRatioGauge)
+  private def registerJvmMetrics(meterRegistry: MeterRegistry): Unit = {
+    new ClassLoaderMetrics().bindTo(meterRegistry)
+    new JvmMemoryMetrics().bindTo(meterRegistry)
+    new JvmGcMetrics().bindTo(meterRegistry)
+    new JvmThreadMetrics().bindTo(meterRegistry)
+  }
 
+  private def createTransactor(
+      jdbcUrl: String,
+      username: String,
+      password: String,
+      meterRegistry: MeterRegistry
+  ): Resource[IO, Transactor[IO]] = {
+    for {
+      hikariConfig <- Resource.pure {
+                       val config = new HikariConfig()
+                       config.setDriverClassName("org.postgresql.Driver")
+                       config.setJdbcUrl(jdbcUrl)
+                       config.setUsername(username)
+                       config.setPassword(password)
+                       config.setMetricRegistry(meterRegistry)
+                       config
+                     }
+      xa <- HikariTransactor.fromHikariConfig[IO](hikariConfig)
+    } yield xa
+  }
+
+  private def createKafkaProducer(
+      bootstrapServers: String,
+      schemaRegistryUrl: String,
+      producerName: String
+  )(implicit meterRegistry: MeterRegistry): Resource[IO, KafkaProducer.Metrics[IO, String, ItemRequested]] = {
+    val avroSettings = AvroSettings {
+      SchemaRegistryClientSettings[IO](schemaRegistryUrl)
+    }
+    implicit val codec               = Codec.derive[ItemRequested]
+    implicit val eventAvroSerializer = avroSerializer[ItemRequested].forValue(avroSettings)
+
+    val batchSize32kb = 32 * 1024
+    val producerSettings = ProducerSettings[IO, String, ItemRequested]
+      .withBootstrapServers(bootstrapServers)
+      .withBatchSize(batchSize32kb)
+      .withClientId(producerName)
+
+    KafkaProducer
+      .resource(producerSettings)
+      .evalTap(a => a.metrics)
+  }
+
+  implicit def customProducerWithMetrics(implicit meterRegistry: MeterRegistry): MkProducer[IO] =
+    new MkProducer[IO] {
+
+      def apply[G[_]](settings: ProducerSettings[G, _, _]): IO[KafkaByteProducer] =
+        IO {
+          val byteArraySerializer = new ByteArraySerializer
+          new org.apache.kafka.clients.producer.KafkaProducer(
+            (settings.properties: Map[String, AnyRef]).asJava,
+            byteArraySerializer,
+            byteArraySerializer
+          )
+        }.flatTap(applyProducerMetrics)
+
+    }
+
+  private def applyProducerMetrics(producer: KafkaByteProducer)(implicit meterRegistry: MeterRegistry): IO[Unit] = {
+    IO(new KafkaClientMetrics(producer).bindTo(meterRegistry))
   }
 }

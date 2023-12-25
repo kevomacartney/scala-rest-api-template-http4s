@@ -1,1 +1,0 @@
-package org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.domain

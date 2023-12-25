@@ -1,10 +1,13 @@
 package org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.domain.repositories
 
-import java.util.UUID
-import scala.language.higherKinds
+import cats.data.EitherT
+import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.domain.aggregate.DomainItem
+import org.{{ cookiecutter.project_domain }}.{{ cookiecutter.project_subdomain }}.domain.error.RepositoryError
 
 trait Repository[F[_]] {
-  def get(id: String): F[Option[RepositoryItem]]
-}
+  def get(id: String): EitherT[F, RepositoryError, Option[DomainItem]]
 
-final case class RepositoryItem(name: String, id: UUID)
+  def commitUpdate(domainItem: DomainItem): EitherT[F, RepositoryError, DomainItem]
+
+  def insert(domainItem: DomainItem): EitherT[F, RepositoryError, DomainItem]
+}
