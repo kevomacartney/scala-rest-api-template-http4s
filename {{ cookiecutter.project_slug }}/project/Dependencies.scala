@@ -3,7 +3,14 @@ import sbt._
 
 object Dependencies {
 
-  val overrides: List[Nothing] = List.empty
+  val overrides: Seq[ModuleID] = Seq(
+    Fs2.fs2Core,
+    Fs2.fs2Io,
+    Http4s.http4sCore,
+    Cats.cats,
+    Cats.catsEffect,
+    Kafka.`kafka-clients`
+  )
 
   object Circe {
     private val circeVersion       = "0.14.6"
@@ -16,8 +23,8 @@ object Dependencies {
   }
 
   object Cats {
-    lazy val cats       = "org.typelevel"    %% "cats-core"   % "2.9.0"
-    lazy val catsEffect = "org.typelevel"    %% "cats-effect" % "3.5.0"
+    lazy val cats       = "org.typelevel"    %% "cats-core"   % "2.10.0"
+    lazy val catsEffect = "org.typelevel"    %% "cats-effect" % "3.5.2"
     lazy val catsRetry  = "com.github.cb372" %% "cats-retry"  % "3.1.0"
   }
 
@@ -37,34 +44,56 @@ object Dependencies {
   }
 
   object Http4s {
-    lazy val http4sDsl        = "org.http4s" %% "http4s-dsl"                % http4sVersion
-    lazy val http4sServer     = "org.http4s" %% "http4s-ember-server"       % http4sVersion
-    lazy val http4sClient     = "org.http4s" %% "http4s-ember-client"       % http4sVersion
-    lazy val http4sCirce      = "org.http4s" %% "http4s-circe"              % http4sVersion
-    lazy val http4sDropwizard = "org.http4s" %% "http4s-dropwizard-metrics" % http4sDropWizardVersion
+    lazy val http4sDsl    = "org.http4s" %% "http4s-dsl"          % http4sVersion
+    lazy val http4sServer = "org.http4s" %% "http4s-ember-server" % http4sVersion
+    lazy val http4sClient = "org.http4s" %% "http4s-ember-client" % http4sVersion
+    lazy val http4sCirce  = "org.http4s" %% "http4s-circe"        % http4sVersion
+    lazy val http4sCore   = "org.http4s" %% "http4s-core"         % http4sVersion
 
-    private lazy val http4sVersion           = "0.23.24"
-    private lazy val http4sDropWizardVersion = "0.23.11"
+    private lazy val http4sVersion = "0.23.24"
 
     val http4sAll = Seq(
       libraryDependencies ++= List(
         Http4s.http4sServer,
         Http4s.http4sClient,
         Http4s.http4sDsl,
-        Http4s.http4sCirce,
-        http4sDropwizard
+        Http4s.http4sCirce
       )
     )
   }
 
   object Fs2 {
-    private lazy val version = "3.1.1"
-    lazy val fs2Core         = "co.fs2" %% "fs2-core" % version
+    private lazy val fs2Version      = "3.9.3"
+    private lazy val fs2KafkaVersion = "3.2.0"
+
+    lazy val fs2Core  = "co.fs2"          %% "fs2-core"  % fs2Version
+    lazy val fs2Kafka = "com.github.fd4s" %% "fs2-kafka" % fs2KafkaVersion
+    lazy val fs2Io    = "co.fs2"          %% "fs2-io"    % fs2Version
+
+  }
+
+  object Avro {
+    private lazy val vulcanAvroVersion    = "3.2.0"
+    private lazy val vulcanGenericVersion = "1.9.0"
+    private lazy val avro4sVersion        = "4.1.1"
+
+    lazy val vulcanAvro    = "com.github.fd4s"     %% "fs2-kafka-vulcan" % vulcanAvroVersion
+    lazy val vulcanGeneric = "com.github.fd4s"     %% "vulcan-generic"   % vulcanGenericVersion
+    lazy val avro4s        = "com.sksamuel.avro4s" %% "avro4s-core"      % avro4sVersion
+
   }
 
   object Testing {
-    lazy val testFramework = "org.scalatest" %% "scalatest"                      % "3.2.15" % "test"
-    lazy val containerTest = "com.dimafeng"  %% "testcontainers-scala-scalatest" % "0.40.12"
+    lazy val testContainerVersion = "1.19.3"
+
+    lazy val testFramework = "org.scalatest" %% "scalatest"                      % "3.2.15"  % Test
+    lazy val testContainer = "com.dimafeng"  %% "testcontainers-scala-scalatest" % "0.40.12" % Test
+    lazy val scalaMock     = "org.scalamock" %% "scalamock"                      % "5.2.0"   % Test
+    lazy val `apache-avro` = "io.confluent"  % "kafka-avro-serializer"           % "5.3.0"   % Test
+
+    lazy val `testContainer-toxiproxy` = "org.testcontainers" % "toxiproxy"  % testContainerVersion % Test
+    lazy val `testContainer-kafka`     = "org.testcontainers" % "kafka"      % testContainerVersion % Test
+    lazy val `testContainer-postgres`  = "org.testcontainers" % "postgresql" % testContainerVersion % Test
   }
 
   object Netty {
@@ -73,10 +102,27 @@ object Dependencies {
   }
 
   object Metrics {
-    private lazy val dropWizardMetricsVersion = "4.2.17"
+    private val micrometerVersion        = "1.10.5"
+    private val meters4sVersion          = "2.0.0"
+    private val prometheusMetricsVersion = "0.24.6"
 
-    val metricsCore = "io.dropwizard.metrics" % "metrics-core" % dropWizardMetricsVersion
-    val metricsJson = "io.dropwizard.metrics" % "metrics-json" % dropWizardMetricsVersion
-    val metricsJvm  = "io.dropwizard.metrics" % "metrics-jvm"  % dropWizardMetricsVersion
+    val microMeterCore       = "io.micrometer" % "micrometer-core"                % micrometerVersion
+    val microMeterPrometheus = "io.micrometer" % "micrometer-registry-prometheus" % micrometerVersion
+    val `prometheus-metrics` = "org.http4s"    %% "http4s-prometheus-metrics"     % prometheusMetricsVersion
+  }
+
+  object Data {
+    private val doobieVersion = "1.0.0-RC5"
+    val `doobie-core`         = "org.tpolecat" %% "doobie-core" % doobieVersion
+    val `doobie-postgres`     = "org.tpolecat" %% "doobie-postgres" % doobieVersion
+    val `doobie-specs2`       = "org.tpolecat" %% "doobie-specs2" % doobieVersion
+    val `doobie-h2`           = "org.tpolecat" %% "doobie-h2" % doobieVersion
+    val `doobie-hikari`       = "org.tpolecat" %% "doobie-hikari" % doobieVersion
+    val `doobie-scalaTest`    = "org.tpolecat" %% "doobie-scalatest" % doobieVersion % Test
+  }
+
+  object Kafka {
+    private val kafkaVersion = "7.5.1-ccs"
+    val `kafka-clients`      = "org.apache.kafka" % "kafka-clients" % kafkaVersion
   }
 }
